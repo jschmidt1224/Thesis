@@ -1,13 +1,13 @@
 clear all; close all; clc;
 
 % Initializing Variables
-PrimaryUsers = 1; %num primary users
+PrimaryUsers = 0; %num primary users
 SecondaryUsers = 1; %num secondary users
 Users = PrimaryUsers + SecondaryUsers; %total users
 Antenna = 2; %num rx/tx antenna per user
-T = 100; %time to simulate
+T = 65; %time to simulate
 t = 1;
-MsgLen = 1000;
+MsgLen = 10000000;
 Subcarriers = 8; %num subcarriers
 Powers = zeros(1, Users, Subcarriers);
 Q = zeros(Antenna, Antenna, Users, Subcarriers);
@@ -17,8 +17,8 @@ nu = 1;
 y = zeros(1, SecondaryUsers, Subcarriers);
 Y = zeros(Antenna, Antenna, SecondaryUsers, Subcarriers);
 P = 8;
-P2 = 10000000;
-M = 1;
+P2 = 10000;
+M = 2;
 
 % Initializing Primary Powers
 % Assuming each primary user only occupies one channel
@@ -64,7 +64,7 @@ for user = PrimaryUsers+1:Users
     end
 end
 
-%rng(12);
+rng(18);
 % Initialize Channel Matrices
 for userFrom = 1:Users
     for userTo = 1:Users
@@ -83,7 +83,7 @@ BER = zeros(T, Users);
 for t = 1:T
     for user = PrimaryUsers+1:Users
         for subcarrier = 1:Subcarriers
-            Powers(:,user, subcarrier) = P * exp(nu*t^(-1/2)*y(:,user-PrimaryUsers, subcarrier));
+            Powers(:,user, subcarrier) = exp(nu*t^(-1/2)*y(:,user-PrimaryUsers, subcarrier));
             divisor = 0;
             for chan = 1:Subcarriers
                 divisor = divisor + exp(nu*t^(-1/2)*y(:,user-PrimaryUsers,chan));
@@ -101,9 +101,9 @@ for t = 1:T
             rxsig = zeros(2, MsgLen);
             for userFrom = 1:Users
                 rxsig = rxsig + P2*H(:,:,userFrom,userTo,subcarrier)*Powers(:,userFrom,subcarrier)*Q(:,:,userFrom,subcarrier)*txmod(:,:,userFrom,subcarrier);
-                rxsig = rxsig + noisePower * (1/sqrt(2)*randn(2,MsgLen) + 1/sqrt(2)*1i*randn(2,MsgLen));
             end
-            rxmsg = qamdemod(1/P2*pinv(H(:,:,userTo,userTo,subcarrier))*rxsig,2^M,0,'gray');
+            rxsig = rxsig + noisePower * (1/sqrt(2)*randn(2,MsgLen) + 1/sqrt(2)*1i*randn(2,MsgLen));
+            rxmsg = qamdemod(pinv(H(:,:,userTo,userTo,subcarrier))*1/P2*rxsig,2^M,0,'gray');
             [numerr, ber] = biterr(txmsg(:,:,userTo,subcarrier), rxmsg);
             BER(t,userTo) = BER(t, userTo) + ber;
         end
@@ -135,6 +135,6 @@ BER = BER / Subcarriers;
 figure
 hold on;
 for u = 1:Users
-    plot(1:T,BER(:,u));
+    semilogy(1:T,BER(:,u));
 end
 legend('primary', 'secondary');
