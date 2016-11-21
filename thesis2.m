@@ -2,16 +2,16 @@
 % Recreating the resuslts from the paper Transmit without Regrets: Online
 % Optimization in MIMO-OFDM Cognitive Radio Systems
 
-clear all; close all; clc;
+clear all; clc;
 
 % Initializing Variables
 PrimaryUsers = 1; %num primary users
 SecondaryUsers = 1; %num secondary users
 Users = PrimaryUsers + SecondaryUsers; %total users
 Antenna = 2; %num rx/tx antenna per user
-T = 100; %time to simulate
+T = 200; %time to simulate
 t = 1;
-Subcarriers = 80; %num subcarriers
+Subcarriers = 8; %num subcarriers
 primaryP = cell(PrimaryUsers, Subcarriers); %power of primary
 secondaryP = cell(SecondaryUsers, Subcarriers); %power of secondary
 primaryQ = cell(PrimaryUsers, Subcarriers); %norm sig covar
@@ -21,8 +21,8 @@ H = cell(Users, Users, Subcarriers, T); %channel matrices
 nu = 1;
 y = cell(SecondaryUsers, Subcarriers);
 Y = cell(SecondaryUsers, Subcarriers);
-P = 100;
-Iters = 1;
+P = 10;
+Iters = 100;
 rates = zeros(Users,T);
 
 for i = 1:Iters
@@ -40,7 +40,7 @@ for i = 1:Iters
         primchan = randi([1 Subcarriers]);
         for subcarrier = 1:Subcarriers
             if (subcarrier == primchan)
-                primaryP{primaryUser, subcarrier} = 1;
+                primaryP{primaryUser, subcarrier} = 10;
             else
                 primaryP{primaryUser, subcarrier} = 0;
             end
@@ -82,12 +82,13 @@ for i = 1:Iters
     % Initialize Channel Matrices
     % Assuming stationary for now
     % TODO: update to jakes when I understand that better
+    %rng(19);
     for userFrom = 1:Users
         for userTo = 1:Users
             for subcarrier = 1:subcarrier
                 tmpH = normrnd(0, 1, 2, 2)/sqrt(2) + 1i * normrnd(0, 1, 2, 2)/sqrt(2);
                 for t = 1:T
-                    H{userFrom, userTo, subcarrier, t} = tmpH;normrnd(0, 1, 2, 2)/sqrt(2) + 1i * normrnd(0, 1, 2, 2)/sqrt(2);
+                    H{userFrom, userTo, subcarrier, t} = normrnd(0, 1, 2, 2)/sqrt(2) + 1i * normrnd(0, 1, 2, 2)/sqrt(2);
                 end
             end
         end
@@ -147,4 +148,6 @@ hold on
 for u = 1:Users
     plot(1:T, abs(rates(u, :))/i);
 end
+
+ylim([0 11])
 

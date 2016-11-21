@@ -1,17 +1,18 @@
-clear all; close all; clc;
+clear all; clc;
 
 % Initializing Variables
-PrimaryUsers = 0; %num primary users
+PrimaryUsers = 1; %num primary users
 SecondaryUsers = 1; %num secondary users
 Users = PrimaryUsers + SecondaryUsers; %total users
 Antenna = 2; %num rx/tx antenna per user
-T = 800; %time to simulate
+T = 200; %time to simulate
 t = 1;
 MsgLen = 100;
 Subcarriers = 8; %num subcarriers
 
-Mords = 10;
-BER = zeros(T, Users, Mords);
+
+Mords = 3;
+BER = zeros(T, Users, Mords, Subcarriers);
 for M = 1:Mords
     Powers = zeros(1, Users, Subcarriers);
     Q = zeros(Antenna, Antenna, Users, Subcarriers);
@@ -20,8 +21,8 @@ for M = 1:Mords
     nu = 1;
     y = zeros(1, SecondaryUsers, Subcarriers);
     Y = zeros(Antenna, Antenna, SecondaryUsers, Subcarriers);
-    P = 8;
-    P2 = 1000;
+    %P = 10;
+    P2 = 10;
     t=1;
     % Initializing Primary Powers
     % Assuming each primary user only occupies one channel
@@ -41,7 +42,7 @@ for M = 1:Mords
     % same power on each channel
     for user = PrimaryUsers+1:Users
         for subcarrier = 1:Subcarriers
-            Powers(:,user, subcarrier) = P * exp(nu*t^(-1/2)*y(:,user-PrimaryUsers, subcarrier));
+            Powers(:,user, subcarrier) = exp(nu*t^(-1/2)*y(:,user-PrimaryUsers, subcarrier));
             divisor = 0;
             for chan = 1:Subcarriers
                 divisor = divisor + exp(nu*t^(-1/2)*y(:,user-PrimaryUsers,chan));
@@ -67,7 +68,7 @@ for M = 1:Mords
         end
     end
     
-    %rng(19);
+    rng(19);
     % Initialize Channel Matrices
     for userFrom = 1:Users
         for userTo = 1:Users
@@ -108,7 +109,7 @@ for M = 1:Mords
                 rxsig = rxsig + noisePower * (1/sqrt(2)*randn(2,MsgLen) + 1/sqrt(2)*1i*randn(2,MsgLen));
                 rxmsg = qamdemod(pinv(H(:,:,userTo,userTo,subcarrier))*1/P2*rxsig,2^M,0,'gray');
                 [numerr, ber] = biterr(txmsg(:,:,userTo,subcarrier), rxmsg);
-                BER(t,userTo,M) = BER(t, userTo,M) + ber;
+                BER(t,userTo,M, subcarrier) = BER(t, userTo,M, subcarrier) + ber;
             end
             for subcarrier = 1:Subcarriers
                 W = zeros(Antenna);
@@ -127,28 +128,31 @@ for M = 1:Mords
                     h = W^(-1/2) * tmpH;
                     n = userTo - PrimaryUsers;
                     M1 = h'*(eye(Antenna) + h * tmpP * h')^-1*h;
-                    y(:,n,subcarrier) = y(:,n,subcarrier) + P *trace(M1*Q(:,:,userTo,subcarrier));
+                    y(:,n,subcarrier) = y(:,n,subcarrier) + trace(M1*Q(:,:,userTo,subcarrier));
                     Y(:,:,n,subcarrier) = Y(:,:,n, subcarrier) + Powers(:,userTo,subcarrier)*M1;
                 end
             end
         end
     end
 end
-BER = BER / Subcarriers;
-%%
+
+
 figure
 hold on;
+throughput = zeros(T, Users, Mords);
 for u = 1:Users
     for m = 1:Mords
-        semilogy(1:T,(1-2*BER(:,u,m))*m);
+        for s = 1:Subcarriers
+            throughput(:,u,m) = throughput(:,u,m) + ((1-2*BER(:,u,m,s))*m);
+        end
     end
 end
-legend('1','2','3','4','5','6','7','8');
-figure
-hold on;
 for u = 1:Users
-    for m = 1:Mords
-        semilogy(1:T,BER(:,u,m));
-    end
+    semilogy(1:T,max(throughput(:,u,:),[],3));
 end
-legend('1','2','3','4','5','6','7','8','9','10');
+
+ylim([0 11])
+
+
+
+
