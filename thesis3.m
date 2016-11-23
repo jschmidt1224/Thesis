@@ -11,7 +11,7 @@ MsgLen = 100;
 Subcarriers = 8; %num subcarriers
 
 
-Mords = 3;
+Mords = 4;
 BER = zeros(T, Users, Mords, Subcarriers);
 for M = 1:Mords
     Powers = zeros(1, Users, Subcarriers);
