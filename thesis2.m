@@ -5,11 +5,11 @@
 clear all; clc;
 
 % Initializing Variables
-PrimaryUsers = 1; %num primary users
+PrimaryUsers = 0; %num primary users
 SecondaryUsers = 1; %num secondary users
 Users = PrimaryUsers + SecondaryUsers; %total users
 Antenna = 2; %num rx/tx antenna per user
-T = 200; %time to simulate
+T = 2000; %time to simulate
 t = 1;
 Subcarriers = 8; %num subcarriers
 primaryP = cell(PrimaryUsers, Subcarriers); %power of primary
@@ -142,12 +142,11 @@ for i = 1:Iters
     
     i
 end
-
+%%
 figure
 hold on
 for u = 1:Users
-    plot(1:T, abs(rates(u, :))/i);
+    plot(200:T, abs(rates(u, 200:end))/i);
 end
-
-ylim([0 11])
+%ylim([0 11])
 
