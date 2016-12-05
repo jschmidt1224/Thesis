@@ -9,7 +9,7 @@ T = 100; %time to simulate
 t = 1;
 BCHn = 31;
 BCHk = 6;
-BCHblocks = 100;
+BCHblocks = 10;
 MsgLen = BCHblocks*BCHk;
 Subcarriers = 8; %num subcarriers
 

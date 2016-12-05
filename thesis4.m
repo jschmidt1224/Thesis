@@ -26,6 +26,8 @@ throughput = zeros(T, Users, Subcarriers);
 
 Powers = zeros(1, Users, Subcarriers);
 PowersRounded = zeros(1, Users, Subcarriers);
+PowersRX = zeros(1, Users, Subcarriers);
+MRX = zeros(1,Users,Subcarriers);
 Q = zeros(Antenna, Antenna, Users, Subcarriers);
 noisePower = eye(Antenna); %noise power
 H = zeros(Antenna, Antenna, Users, Users, Subcarriers, T);
@@ -94,7 +96,8 @@ end
 clear primaryUser secondaryUser subcarrier userFrom userTo tmpH;
 rng('shuffle')
 
-M = 1;
+%M = 1;
+t = 1;
 for p = 1:Packets
     PowersRounded = round(Powers*2^PowerBits);
     txpre = zeros(Antenna, 1, Users, Subcarriers,(PowerBits+ModBits+CodeBits)*(BCHPren/BCHPrek));
@@ -134,6 +137,10 @@ for p = 1:Packets
     
     txsigmaster = repmat(cat(5, txpre, txmod), 1, Iters, 1, 1, 1);
     Len = BCHn + BCHPren;
+    rxMaster = zeros(Antenna, Iters, Users, Subcarriers, BCHn+BCHPren);
+    %rxPre = zeros(1,1,Users,Subcarriers,BCHPren);
+    rxPreDec = zeros(1,1,Users,Subcarriers,BCHPrek);
+    rxDec = zeros(Antenna,1,Users,Subcarriers,BCHk);
     for b = 1:(BCHn+BCHPren)
         txsig = txsigmaster(:,:,:,:,b);
         t
@@ -149,8 +156,18 @@ for p = 1:Packets
             end
         end
         
-        
-        
+        if (b == BCHPren + 1)
+            for u=1:Users
+                for s=1:Subcarriers
+                    rxpre = gf(mode(mode(rxMaster(:,:,u,s,1:BCHPren),2)));
+                    rxpredec = bchdec(reshape(rxpre, 1, BCHPren),BCHPren,BCHPrek);
+                    rxPreDec(1,1,u,s,:) = rxpredec.x;
+                    PowersRX(:,u,s) = double(bi2de(reshape(rxPreDec(1,1,u,s,1:PowerBits),1,[])))./2^PowerBits;
+                    MRX(1,u,s) = double(bi2de(reshape(rxPreDec(1,1,u,s,PowerBits+1:BCHPrek-CodeBits),1,[])));
+                    %CodeRX(1,u,s) = rxpre(end-CodeBits+1:end);
+                end
+            end
+        end
         for userTo = 1:Users
             for subcarrier = 1:Subcarriers
                 rxsig = zeros(Antenna, Iters);
@@ -159,8 +176,13 @@ for p = 1:Packets
                 end
                 rxsig = rxsig + noisePower * (1/sqrt(2)*randn(Antenna,Iters) + 1/sqrt(2)*1i*randn(Antenna,Iters));
                 rxsig = pinv(H(:,:,userTo,userTo,subcarrier)).*1/P2*rxsig;
-                if (b < (BCHn+BCHPren))
-                    rxmsg = gf(qamdemod(rxsig, 2, 'gray','OutputType','bit','UnitAveragePower',true));
+                if (b <= (BCHPren))
+                    rxmsg = qamdemod(rxsig, 2, 'gray','OutputType','bit','UnitAveragePower',true);
+                    rxMaster(:,:,userTo,subcarrier,b) = rxmsg;
+                else
+                    rxsig = rxsig ./ PowersRX(1,userTo,subcarrier);
+                    rxmsg = qamdemod(rxsig, 2^MRX(1,userTo,subcarrier), 'gray','OutputType','bit','UnitAveragePower',true);
+                    rxMaster(:,:,userTo,subcarrier,b) = rxmsg;
                 end
                 
 %                 %rxpre = gf(qamdemod(rxsig(1,:), 2, 'gray','OutputType','bit','UnitAveragePower',true));
@@ -195,6 +217,8 @@ for p = 1:Packets
                 
                 
             end
+            
+            
             for subcarrier = 1:Subcarriers
                 W = zeros(Antenna);
                 for userFrom = 1:Users
@@ -212,6 +236,17 @@ for p = 1:Packets
                     M1 = h'*(eye(Antenna) + h * tmpP * h')^-1*h;
                     y(:,n,subcarrier) = y(:,n,subcarrier) + trace(M1*Q(:,:,userTo,subcarrier));
                     Y(:,:,n,subcarrier) = Y(:,:,n, subcarrier) + Powers(:,userTo,subcarrier)*M1;
+                end
+            end
+            
+            
+        end
+        if (b == BCHn+BCHPren)
+            for u=1:Users
+                for s=1:Subcarriers
+                    rx = gf(mode(rxMaster(:,:,u,s,BCHPren+1:end),2));
+                    rxdec = bchdec(reshape(rx, [], BCHn),BCHn,BCHk);
+                    rxDec(:,1,u,s,:) = reshape(rxdec.x, Antenna,1,1,1,[]);
                 end
             end
         end
