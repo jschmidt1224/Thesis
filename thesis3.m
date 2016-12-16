@@ -5,7 +5,7 @@ PrimaryUsers = 0; %num primary users
 SecondaryUsers = 1; %num secondary users
 Users = PrimaryUsers + SecondaryUsers; %total users
 Antenna = 2; %num rx/tx antenna per user
-T = 100; %time to simulate
+T = 400; %time to simulate
 t = 1;
 BCHn = 31;
 BCHk = 6;
@@ -13,7 +13,7 @@ BCHblocks = 10;
 MsgLen = BCHblocks*BCHk;
 Subcarriers = 8; %num subcarriers
 
-Mords = 5;
+Mords = 3;
 BER = zeros(T, Users, Mords, Subcarriers);
 for M = 1:Mords
     Powers = zeros(1, Users, Subcarriers);
@@ -24,7 +24,7 @@ for M = 1:Mords
     y = zeros(1, SecondaryUsers, Subcarriers);
     Y = zeros(Antenna, Antenna, SecondaryUsers, Subcarriers);
     %P = 10;
-    P2 = 10;
+    P2 = 100;
     t=1;
     % Initializing Primary Powers
     % Assuming each primary user only occupies one channel
@@ -150,12 +150,12 @@ for M = 1:Mords
                 for userFrom = 1:Users
                     if (userTo ~= userFrom)
                         tmpH = H(:,:,userFrom,userTo,subcarrier,t);
-                        W = W + tmpH * (Powers(:,userFrom,subcarrier) .* Q(:,:,userFrom,subcarrier)) * tmpH';
+                        W = W + tmpH * (P2*Powers(:,userFrom,subcarrier) .* Q(:,:,userFrom,subcarrier)) * tmpH';
                     end
                 end
                 W = W + noisePower;
                 tmpH = H(:,:,userTo,userTo,subcarrier,t);
-                tmpP = Powers(:,userTo,subcarrier) * Q(:,:,userTo,subcarrier);
+                tmpP = P2*Powers(:,userTo,subcarrier) * Q(:,:,userTo,subcarrier);
                 if (userTo > PrimaryUsers)
                     h = W^(-1/2) * tmpH;
                     n = userTo - PrimaryUsers;
