@@ -22,7 +22,7 @@ CodeBits = 2;
 
 Mords = ones(1, Users, Subcarriers);
 Codes = zeros(CodeBits, Users, Subcarriers);
-throughput = zeros(T, Users, Subcarriers);
+throughput = zeros(Packets, Users, Subcarriers);
 
 Powers = zeros(1, Users, Subcarriers);
 PowersRounded = zeros(1, Users, Subcarriers);

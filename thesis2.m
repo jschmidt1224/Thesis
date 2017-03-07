@@ -23,7 +23,7 @@ y = cell(SecondaryUsers, Subcarriers);
 Y = cell(SecondaryUsers, Subcarriers);
 SNRset = 1:30;
 Pset = 10.^(SNRset / 10);
-Iters = 100;
+Iters = 1;
 rates = zeros(Users,T);
 Rates = zeros(Users,size(Pset,2));
 p=1
@@ -86,7 +86,7 @@ for P = Pset
         % Initialize Channel Matrices
         % Assuming stationary for now
         % TODO: update to jakes when I understand that better
-        %rng(19);
+        rng(19);
         for userFrom = 1:Users
             for userTo = 1:Users
                 for subcarrier = 1:subcarrier
@@ -144,6 +144,7 @@ for P = Pset
             end
         end
     end
+    
     for u = 1:Users
         Rates(u,p) = rates(u,end)/i;
     end
@@ -153,5 +154,5 @@ end
 figure
 hold on
 for u = 1:Users
-    plot(10*log10(Pset), abs(Rates(u, :)));
+    plot(Pset, abs(Rates(u, :)));
 end
